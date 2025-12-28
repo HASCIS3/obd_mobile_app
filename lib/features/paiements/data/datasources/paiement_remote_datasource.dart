@@ -37,7 +37,7 @@ class PaiementRemoteDataSourceImpl implements PaiementRemoteDataSource {
     } else {
       list = [];
     }
-
+    
     return list
         .map((json) => PaiementModel.fromJson(json as Map<String, dynamic>))
         .toList();

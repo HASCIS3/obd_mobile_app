@@ -68,11 +68,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     final result = await _authRepository.login(event.email, event.password);
 
-    result.fold(
+    await result.fold(
       (failure) {
         emit(AuthState.error(failure.message));
       },
-      (user) {
+      (user) async {
+        // Configurer le token dans DioClient après connexion réussie
+        final token = await _authRepository.getToken();
+        if (token != null) {
+          _dioClient.setAuthToken(token);
+        }
         emit(AuthState.authenticated(user));
       },
     );

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/widgets/obd_logo.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
 
 /// Page de démarrage de l'application
 class SplashPage extends StatefulWidget {
@@ -46,14 +48,19 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   }
 
   Future<void> _initialize() async {
-    // Attendre l'animation + chargement
-    await Future.delayed(const Duration(seconds: 3));
+    // Attendre l'animation
+    await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
 
-    // TODO: Vérifier si l'utilisateur est connecté
-    // Pour l'instant, rediriger vers login
-    context.go(RouteNames.login);
+    // Vérifier l'état d'authentification
+    final authState = context.read<AuthBloc>().state;
+    
+    if (authState.status == AuthStatus.authenticated) {
+      context.go(RouteNames.dashboard);
+    } else {
+      context.go(RouteNames.login);
+    }
   }
 
   @override

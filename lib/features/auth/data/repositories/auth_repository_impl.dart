@@ -25,23 +25,52 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, UserModel>> login(String email, String password) async {
-    if (!await _networkInfo.isConnected) {
-      return const Left(NetworkFailure());
+    // Si connecté, essayer la connexion en ligne
+    if (await _networkInfo.isConnected) {
+      try {
+        final response = await _remoteDataSource.login(email, password);
+        
+        // Sauvegarder le token et l'utilisateur localement
+        await _localDataSource.saveToken(response.token);
+        await _localDataSource.saveUser(response.user);
+        // Sauvegarder les credentials pour connexion hors-ligne
+        await _localDataSource.saveCredentials(email, password);
+        
+        return Right(response.user);
+      } on DioException catch (e) {
+        // Si erreur réseau, essayer la connexion hors-ligne
+        return await _tryOfflineLogin(email, password, e);
+      } catch (e) {
+        return Left(ServerFailure(message: e.toString()));
+      }
     }
 
-    try {
-      final response = await _remoteDataSource.login(email, password);
-      
-      // Sauvegarder le token et l'utilisateur localement
-      await _localDataSource.saveToken(response.token);
-      await _localDataSource.saveUser(response.user);
-      
-      return Right(response.user);
-    } on DioException catch (e) {
-      return Left(_handleDioError(e));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+    // Mode hors-ligne: vérifier les credentials locaux
+    return await _tryOfflineLogin(email, password, null);
+  }
+
+  Future<Either<Failure, UserModel>> _tryOfflineLogin(
+    String email, 
+    String password, 
+    DioException? originalError,
+  ) async {
+    // Vérifier si les credentials correspondent à ceux sauvegardés
+    final savedCredentials = await _localDataSource.getCredentials();
+    final localUser = await _localDataSource.getUser();
+    
+    if (savedCredentials != null && 
+        savedCredentials['email'] == email && 
+        savedCredentials['password'] == password &&
+        localUser != null) {
+      // Connexion hors-ligne réussie
+      return Right(localUser);
     }
+    
+    // Pas de credentials locaux ou ne correspondent pas
+    if (originalError != null) {
+      return Left(_handleDioError(originalError));
+    }
+    return const Left(NetworkFailure(message: 'Connexion hors-ligne impossible. Connectez-vous d\'abord en ligne.'));
   }
 
   @override

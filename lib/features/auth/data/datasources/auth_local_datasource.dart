@@ -13,6 +13,8 @@ abstract class AuthLocalDataSource {
   Future<void> saveUser(UserModel user);
   Future<UserModel?> getUser();
   Future<void> deleteUser();
+  Future<void> saveCredentials(String email, String password);
+  Future<Map<String, String>?> getCredentials();
   Future<void> clearAll();
 }
 
@@ -62,9 +64,31 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     await _storage.delete(key: AppConfig.userKey);
   }
 
+  static const String _credentialsKey = 'offline_credentials';
+
+  @override
+  Future<void> saveCredentials(String email, String password) async {
+    final credentials = jsonEncode({'email': email, 'password': password});
+    await _storage.write(key: _credentialsKey, value: credentials);
+  }
+
+  @override
+  Future<Map<String, String>?> getCredentials() async {
+    final credentialsJson = await _storage.read(key: _credentialsKey);
+    if (credentialsJson == null) return null;
+    
+    try {
+      final map = jsonDecode(credentialsJson) as Map<String, dynamic>;
+      return {'email': map['email'] as String, 'password': map['password'] as String};
+    } catch (e) {
+      return null;
+    }
+  }
+
   @override
   Future<void> clearAll() async {
     await deleteToken();
     await deleteUser();
+    await _storage.delete(key: _credentialsKey);
   }
 }

@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 
 import '../network/dio_client.dart';
 import '../network/network_info.dart';
+import '../services/sync_service.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -42,6 +43,11 @@ Future<void> initializeDependencies() async {
   
   sl.registerLazySingleton<DioClient>(
     () => DioClient(networkInfo: sl<NetworkInfo>()),
+  );
+
+  // Sync Service
+  sl.registerLazySingleton<SyncService>(
+    () => SyncService(dioClient: sl<DioClient>()),
   );
 
   // ===== Auth Feature =====

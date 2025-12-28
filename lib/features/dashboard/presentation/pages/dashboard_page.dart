@@ -159,7 +159,7 @@ class _DashboardView extends StatelessWidget {
                           icon: Icons.payment,
                           label: 'Paiement',
                           color: AppColors.secondary,
-                          onTap: () => context.go(RouteNames.paiements),
+                          onTap: () => context.push('${RouteNames.paiements}/${RouteNames.paiementCreate}'),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -168,7 +168,7 @@ class _DashboardView extends StatelessWidget {
                           icon: Icons.person_add,
                           label: 'Athlète',
                           color: AppColors.accent,
-                          onTap: () => context.go(RouteNames.athletes),
+                          onTap: () => context.push('${RouteNames.athletes}/${RouteNames.athleteCreate}'),
                         ),
                       ),
                     ],
@@ -212,52 +212,180 @@ class _RevenusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pourcentage = paiements.pourcentagePaye / 100;
+    final hasData = paiements.total > 0;
     
     return Card(
-      child: Padding(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [Colors.white, AppColors.primary.withOpacity(0.03)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
         padding: const EdgeInsets.all(AppSizes.paddingM),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Revenus du mois',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: pourcentage.clamp(0.0, 1.0),
-                      minHeight: 8,
-                      backgroundColor: AppColors.grey200,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        AppColors.primary,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
                       ),
+                      child: Icon(Icons.account_balance_wallet, color: AppColors.primary, size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Revenus du mois',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getPercentageColor(paiements.pourcentagePaye).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${paiements.pourcentagePaye.toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: _getPercentageColor(paiements.pourcentagePaye),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  '${paiements.pourcentagePaye.toStringAsFixed(0)}%',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(color: AppColors.primary),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            // Barre de progression
+            Stack(
+              children: [
+                Container(
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: AppColors.grey200,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                FractionallySizedBox(
+                  widthFactor: pourcentage.clamp(0.0, 1.0),
+                  child: Container(
+                    height: 12,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.primary, AppColors.primary.withOpacity(0.7)],
+                      ),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              '${_formatMoney(paiements.paye)} / ${_formatMoney(paiements.total)} FCFA',
-              style: Theme.of(context).textTheme.bodySmall,
+            const SizedBox(height: 12),
+            
+            // Montants
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Encaissé',
+                      style: TextStyle(fontSize: 11, color: AppColors.grey600),
+                    ),
+                    Text(
+                      '${_formatMoney(paiements.paye)} FCFA',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Arriérés',
+                      style: TextStyle(fontSize: 11, color: AppColors.grey600),
+                    ),
+                    Text(
+                      '${_formatMoney(paiements.arrieres)} FCFA',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Attendu',
+                      style: TextStyle(fontSize: 11, color: AppColors.grey600),
+                    ),
+                    Text(
+                      '${_formatMoney(paiements.total)} FCFA',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
+            
+            if (!hasData) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 16, color: AppColors.warning),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Aucun paiement enregistré ce mois',
+                        style: TextStyle(fontSize: 12, color: AppColors.warning),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Color _getPercentageColor(double percentage) {
+    if (percentage >= 80) return AppColors.success;
+    if (percentage >= 50) return AppColors.warning;
+    return AppColors.error;
   }
 
   String _formatMoney(int amount) {
@@ -268,14 +396,23 @@ class _RevenusCard extends StatelessWidget {
   }
 }
 
-class _ActivitiesCard extends StatelessWidget {
+class _ActivitiesCard extends StatefulWidget {
   final List<ActivityModel> activities;
 
   const _ActivitiesCard({required this.activities});
 
   @override
+  State<_ActivitiesCard> createState() => _ActivitiesCardState();
+}
+
+class _ActivitiesCardState extends State<_ActivitiesCard> {
+  String _selectedFilter = 'Toutes';
+  static const int _maxVisibleItems = 5;
+  bool _showAll = false;
+
+  @override
   Widget build(BuildContext context) {
-    if (activities.isEmpty) {
+    if (widget.activities.isEmpty) {
       return Card(
         child: Padding(
           padding: const EdgeInsets.all(AppSizes.paddingL),
@@ -291,43 +428,422 @@ class _ActivitiesCard extends StatelessWidget {
       );
     }
 
-    return Card(
-      child: Column(
-        children: activities.asMap().entries.map((entry) {
-          final index = entry.key;
-          final activity = entry.value;
-          final isLast = index == activities.length - 1;
+    // Extraire les disciplines uniques
+    final disciplines = <String>{'Toutes'};
+    for (var activity in widget.activities) {
+      if (activity.discipline != null && activity.discipline!.isNotEmpty) {
+        disciplines.add(activity.discipline!);
+      }
+    }
 
-          return Column(
+    // Filtrer par discipline
+    final filteredActivities = _selectedFilter == 'Toutes'
+        ? widget.activities
+        : widget.activities.where((a) => a.discipline == _selectedFilter).toList();
+
+    // Grouper par date puis par discipline
+    final groupedByDate = <String, Map<String, List<ActivityModel>>>{};
+    for (var activity in filteredActivities) {
+      final dateKey = _formatDateKey(activity.date);
+      final discipline = activity.discipline ?? 'Autre';
+      groupedByDate.putIfAbsent(dateKey, () => {});
+      groupedByDate[dateKey]!.putIfAbsent(discipline, () => []).add(activity);
+    }
+
+    // Limiter le nombre de dates affichées
+    final dateEntries = groupedByDate.entries.toList();
+    final visibleEntries = _showAll ? dateEntries : dateEntries.take(_maxVisibleItems).toList();
+
+    return Column(
+      children: [
+        // Filtres par discipline
+        if (disciplines.length > 2)
+          SizedBox(
+            height: 36,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: disciplines.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final discipline = disciplines.elementAt(index);
+                final isSelected = discipline == _selectedFilter;
+                return FilterChip(
+                  label: Text(
+                    discipline,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isSelected ? Colors.white : AppColors.grey700,
+                    ),
+                  ),
+                  selected: isSelected,
+                  onSelected: (_) => setState(() => _selectedFilter = discipline),
+                  backgroundColor: AppColors.grey100,
+                  selectedColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  visualDensity: VisualDensity.compact,
+                );
+              },
+            ),
+          ),
+        
+        if (disciplines.length > 2) const SizedBox(height: 12),
+
+        // Résumé global
+        _buildSummaryCard(filteredActivities),
+
+        const SizedBox(height: 12),
+
+        // Liste des activités groupées
+        Card(
+          clipBehavior: Clip.antiAlias,
+          child: Column(
             children: [
-              _ActivityItem(
-                icon: activity.present == true ? Icons.check_circle : Icons.cancel,
-                iconColor: activity.present == true ? AppColors.success : AppColors.error,
-                title: activity.athlete ?? 'Activité',
-                subtitle: activity.discipline ?? '',
-                time: _formatTime(activity.date),
-              ),
-              if (!isLast) const Divider(height: 1),
+              ...visibleEntries.map((dateEntry) {
+                final dateLabel = dateEntry.key;
+                final disciplineGroups = dateEntry.value;
+                
+                // Calculer les totaux pour cette date
+                int totalPresents = 0;
+                int totalAbsents = 0;
+                int totalAthletes = 0;
+                
+                for (var group in disciplineGroups.values) {
+                  totalAthletes += group.length;
+                  totalPresents += group.where((a) => a.present == true).length;
+                  totalAbsents += group.where((a) => a.present != true).length;
+                }
+
+                return ExpansionTile(
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    radius: 18,
+                    child: Text(
+                      '$totalAthletes',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    dateLabel,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  subtitle: Row(
+                    children: [
+                      Icon(Icons.check_circle, size: 14, color: AppColors.success),
+                      const SizedBox(width: 4),
+                      Text('$totalPresents', style: TextStyle(color: AppColors.success, fontSize: 12)),
+                      const SizedBox(width: 12),
+                      Icon(Icons.cancel, size: 14, color: AppColors.error),
+                      const SizedBox(width: 4),
+                      Text('$totalAbsents', style: TextStyle(color: AppColors.error, fontSize: 12)),
+                      const SizedBox(width: 12),
+                      Text(
+                        '${disciplineGroups.length} discipline${disciplineGroups.length > 1 ? 's' : ''}',
+                        style: TextStyle(fontSize: 11, color: AppColors.grey600),
+                      ),
+                    ],
+                  ),
+                  children: disciplineGroups.entries.map((disciplineEntry) {
+                    final disciplineName = disciplineEntry.key;
+                    final athletes = disciplineEntry.value;
+                    final nbPresents = athletes.where((a) => a.present == true).length;
+                    final nbAbsents = athletes.length - nbPresents;
+                    final tauxPresence = athletes.isNotEmpty 
+                        ? (nbPresents / athletes.length * 100).toStringAsFixed(0) 
+                        : '0';
+
+                    return Container(
+                      color: AppColors.grey100,
+                      child: ExpansionTile(
+                        tilePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+                        leading: _getDisciplineIcon(disciplineName),
+                        title: Text(
+                          disciplineName,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                        ),
+                        subtitle: Row(
+                          children: [
+                            Text(
+                              '${athletes.length} athlètes',
+                              style: TextStyle(fontSize: 11, color: AppColors.grey600),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: _getTauxColor(double.parse(tauxPresence)).withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '$tauxPresence%',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: _getTauxColor(double.parse(tauxPresence)),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        children: athletes.map((activity) {
+                          return Container(
+                            color: Colors.white,
+                            child: ListTile(
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                              leading: Icon(
+                                activity.present == true ? Icons.check_circle : Icons.cancel,
+                                color: activity.present == true ? AppColors.success : AppColors.error,
+                                size: 18,
+                              ),
+                              title: Text(
+                                activity.athlete ?? 'Athlète',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              trailing: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: activity.present == true 
+                                      ? AppColors.success.withOpacity(0.15) 
+                                      : AppColors.error.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  activity.present == true ? 'P' : 'A',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: activity.present == true ? AppColors.success : AppColors.error,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    );
+                  }).toList(),
+                );
+              }),
+
+              // Bouton "Voir plus" si nécessaire
+              if (dateEntries.length > _maxVisibleItems && !_showAll)
+                InkWell(
+                  onTap: () => setState(() => _showAll = true),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.grey100,
+                      border: Border(top: BorderSide(color: AppColors.grey200)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.expand_more, size: 18, color: AppColors.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Voir ${dateEntries.length - _maxVisibleItems} jours de plus',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              
+              if (_showAll && dateEntries.length > _maxVisibleItems)
+                InkWell(
+                  onTap: () => setState(() => _showAll = false),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.grey100,
+                      border: Border(top: BorderSide(color: AppColors.grey200)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.expand_less, size: 18, color: AppColors.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Réduire',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
-          );
-        }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCard(List<ActivityModel> activities) {
+    final totalPresents = activities.where((a) => a.present == true).length;
+    final totalAbsents = activities.length - totalPresents;
+    final tauxGlobal = activities.isNotEmpty 
+        ? (totalPresents / activities.length * 100) 
+        : 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary.withOpacity(0.1), AppColors.primary.withOpacity(0.05)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _SummaryItem(
+            icon: Icons.people,
+            value: '${activities.length}',
+            label: 'Total',
+            color: AppColors.primary,
+          ),
+          _SummaryItem(
+            icon: Icons.check_circle,
+            value: '$totalPresents',
+            label: 'Présents',
+            color: AppColors.success,
+          ),
+          _SummaryItem(
+            icon: Icons.cancel,
+            value: '$totalAbsents',
+            label: 'Absents',
+            color: AppColors.error,
+          ),
+          _SummaryItem(
+            icon: Icons.percent,
+            value: '${tauxGlobal.toStringAsFixed(0)}%',
+            label: 'Taux',
+            color: _getTauxColor(tauxGlobal),
+          ),
+        ],
       ),
     );
   }
 
-  String _formatTime(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-
-    if (diff.inMinutes < 60) {
-      return 'Il y a ${diff.inMinutes} min';
-    } else if (diff.inHours < 24) {
-      return 'Il y a ${diff.inHours}h';
-    } else if (diff.inDays == 1) {
-      return 'Hier';
-    } else {
-      return 'Il y a ${diff.inDays} jours';
+  Widget _getDisciplineIcon(String discipline) {
+    IconData icon;
+    Color color;
+    
+    switch (discipline.toLowerCase()) {
+      case 'basketball':
+      case 'basket':
+        icon = Icons.sports_basketball;
+        color = Colors.orange;
+        break;
+      case 'volleyball':
+      case 'volley':
+        icon = Icons.sports_volleyball;
+        color = Colors.blue;
+        break;
+      case 'taekwondo':
+      case 'karate':
+      case 'judo':
+        icon = Icons.sports_martial_arts;
+        color = Colors.red;
+        break;
+      case 'football':
+        icon = Icons.sports_soccer;
+        color = Colors.green;
+        break;
+      case 'natation':
+        icon = Icons.pool;
+        color = Colors.cyan;
+        break;
+      default:
+        icon = Icons.sports;
+        color = AppColors.primary;
     }
+    
+    return CircleAvatar(
+      radius: 14,
+      backgroundColor: color.withOpacity(0.15),
+      child: Icon(icon, size: 16, color: color),
+    );
+  }
+
+  Color _getTauxColor(double taux) {
+    if (taux >= 80) return AppColors.success;
+    if (taux >= 50) return AppColors.warning;
+    return AppColors.error;
+  }
+
+  String _formatDateKey(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    final diff = today.difference(dateOnly).inDays;
+
+    if (diff == 0) {
+      return "Aujourd'hui";
+    } else if (diff == 1) {
+      return 'Hier';
+    } else if (diff < 7) {
+      return 'Il y a $diff jours';
+    } else {
+      const mois = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+      return '${date.day} ${mois[date.month - 1]} ${date.year}';
+    }
+  }
+}
+
+class _SummaryItem extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+
+  const _SummaryItem({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: AppColors.grey600,
+          ),
+        ),
+      ],
+    );
   }
 }
 

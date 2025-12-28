@@ -66,7 +66,7 @@ class _AthletesViewState extends State<_AthletesView> {
             title: const Text(AppStrings.athletes),
           ),
           floatingActionButton: FloatingActionButton(
-            onPressed: () => context.push(RouteNames.athleteCreate),
+            onPressed: () => context.push('${RouteNames.athletes}/${RouteNames.athleteCreate}'),
             child: const Icon(Icons.add),
           ),
           body: Column(

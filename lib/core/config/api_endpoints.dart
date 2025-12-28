@@ -22,6 +22,7 @@ class ApiEndpoints {
   // Presences
   static const String presences = '/presences';
   static String presence(int id) => '/presences/$id';
+  static const String presencesPointageMasse = '/presences/pointage-masse';
   static const String presencesRapportMensuel = '/presences/rapport-mensuel';
   static String presencesAthlete(int athleteId) => '/presences/athlete/$athleteId';
 

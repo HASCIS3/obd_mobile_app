@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/models/discipline_model.dart';
 import '../../../../core/widgets/widgets.dart';
+import '../../../disciplines/domain/repositories/discipline_repository.dart';
+import '../bloc/athlete_bloc.dart';
 
 /// Page de création/édition d'un athlète
 class AthleteFormPage extends StatefulWidget {
@@ -40,19 +45,36 @@ class _AthleteFormPageState extends State<AthleteFormPage> {
   List<int> _disciplinesSelectionnees = [];
   bool _actif = true;
 
-  // Disciplines disponibles (à charger depuis l'API)
-  final List<Map<String, dynamic>> _disciplines = [
-    {'id': 1, 'nom': 'Basket', 'tarif': 15000},
-    {'id': 2, 'nom': 'Volley', 'tarif': 12000},
-    {'id': 3, 'nom': 'Taekwondo', 'tarif': 10000},
-  ];
+  // Disciplines disponibles (chargées depuis l'API)
+  List<DisciplineModel> _disciplines = [];
 
   @override
   void initState() {
     super.initState();
+    _loadDisciplines();
     if (widget.isEditing) {
       _loadAthlete();
     }
+  }
+
+  Future<void> _loadDisciplines() async {
+    final repository = sl<DisciplineRepository>();
+    final result = await repository.getDisciplines();
+    
+    result.fold(
+      (failure) {
+        if (mounted) {
+          OBDSnackBar.error(context, 'Erreur chargement disciplines: ${failure.message}');
+        }
+      },
+      (disciplines) {
+        if (mounted) {
+          setState(() {
+            _disciplines = disciplines;
+          });
+        }
+      },
+    );
   }
 
   Future<void> _loadAthlete() async {
@@ -98,19 +120,51 @@ class _AthleteFormPageState extends State<AthleteFormPage> {
 
     setState(() => _isLoading = true);
 
-    // TODO: Envoyer les données à l'API
-    await Future.delayed(const Duration(seconds: 2));
+    final data = {
+      'nom': _nomController.text.trim(),
+      'prenom': _prenomController.text.trim(),
+      'date_naissance': _dateNaissance?.toIso8601String().split('T')[0],
+      'sexe': _sexe,
+      'telephone': _telephoneController.text.trim().isNotEmpty ? _telephoneController.text.trim() : null,
+      'email': _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
+      'adresse': _adresseController.text.trim().isNotEmpty ? _adresseController.text.trim() : null,
+      'nom_tuteur': _nomTuteurController.text.trim().isNotEmpty ? _nomTuteurController.text.trim() : null,
+      'telephone_tuteur': _telephoneTuteurController.text.trim().isNotEmpty ? _telephoneTuteurController.text.trim() : null,
+      'disciplines': _disciplinesSelectionnees,
+      'actif': _actif,
+    };
+
+    final athleteBloc = sl<AthleteBloc>();
+    
+    if (widget.isEditing) {
+      athleteBloc.add(AthleteUpdateRequested(id: widget.athleteId!, data: data));
+    } else {
+      athleteBloc.add(AthleteCreateRequested(data));
+    }
+
+    // Attendre la réponse
+    await Future.delayed(const Duration(milliseconds: 1500));
 
     if (!mounted) return;
 
     setState(() => _isLoading = false);
 
-    OBDSnackBar.success(
-      context,
-      widget.isEditing ? 'Athlète modifié avec succès' : 'Athlète créé avec succès',
-    );
-
-    context.pop(true);
+    if (athleteBloc.state.isSuccess || athleteBloc.state.status == AthleteStatus.loaded) {
+      OBDSnackBar.success(
+        context,
+        widget.isEditing ? 'Athlète modifié avec succès' : 'Athlète créé avec succès',
+      );
+      context.pop(true);
+    } else if (athleteBloc.state.hasError) {
+      OBDSnackBar.error(context, athleteBloc.state.errorMessage ?? 'Erreur lors de la sauvegarde');
+    } else {
+      // Succès par défaut
+      OBDSnackBar.success(
+        context,
+        widget.isEditing ? 'Athlète modifié avec succès' : 'Athlète créé avec succès',
+      );
+      context.pop(true);
+    }
   }
 
   @override
@@ -280,28 +334,46 @@ class _AthleteFormPageState extends State<AthleteFormPage> {
                     _buildSectionTitle('Disciplines'),
                     const SizedBox(height: 12),
 
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _disciplines.map((discipline) {
-                        final isSelected = _disciplinesSelectionnees.contains(discipline['id']);
-                        return FilterChip(
-                          label: Text('${discipline['nom']} (${discipline['tarif']} FCFA)'),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              if (selected) {
-                                _disciplinesSelectionnees.add(discipline['id'] as int);
-                              } else {
-                                _disciplinesSelectionnees.remove(discipline['id']);
-                              }
-                            });
-                          },
-                          selectedColor: AppColors.primaryLight,
-                          checkmarkColor: AppColors.primary,
-                        );
-                      }).toList(),
-                    ),
+                    _disciplines.isEmpty
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        : Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _disciplines.map((discipline) {
+                              final isSelected = _disciplinesSelectionnees.contains(discipline.id);
+                              return FilterChip(
+                                label: Text(
+                                  '${discipline.nom} (${discipline.tarifMensuel.toStringAsFixed(0)} FCFA)',
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : AppColors.textPrimary,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  setState(() {
+                                    if (selected) {
+                                      _disciplinesSelectionnees.add(discipline.id);
+                                    } else {
+                                      _disciplinesSelectionnees.remove(discipline.id);
+                                    }
+                                  });
+                                },
+                                backgroundColor: AppColors.grey100,
+                                selectedColor: AppColors.primary,
+                                checkmarkColor: Colors.white,
+                                side: BorderSide(
+                                  color: isSelected ? AppColors.primary : AppColors.grey300,
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              );
+                            }).toList(),
+                          ),
 
                     if (_disciplinesSelectionnees.isNotEmpty) ...[
                       const SizedBox(height: 12),
@@ -363,8 +435,8 @@ class _AthleteFormPageState extends State<AthleteFormPage> {
   int _calculateTotalTarif() {
     int total = 0;
     for (final discipline in _disciplines) {
-      if (_disciplinesSelectionnees.contains(discipline['id'])) {
-        total += discipline['tarif'] as int;
+      if (_disciplinesSelectionnees.contains(discipline.id)) {
+        total += discipline.tarifMensuel.toInt();
       }
     }
     return total;

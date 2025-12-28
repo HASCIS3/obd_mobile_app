@@ -8,6 +8,7 @@ import '../../features/athletes/presentation/pages/athletes_page.dart';
 import '../../features/athletes/presentation/pages/athlete_detail_page.dart';
 import '../../features/athletes/presentation/pages/athlete_form_page.dart';
 import '../../features/presences/presentation/pages/presences_page.dart';
+import '../../features/presences/presentation/pages/pointage_page.dart';
 import '../../features/paiements/presentation/pages/paiements_page.dart';
 import '../../features/paiements/presentation/pages/paiement_form_page.dart';
 import '../../features/performances/presentation/pages/performances_page.dart';
@@ -25,7 +26,7 @@ class AppRouter {
   AppRouter({this.isAuthenticated = false});
 
   late final GoRouter router = GoRouter(
-    initialLocation: RouteNames.splash,
+    initialLocation: isAuthenticated ? RouteNames.dashboard : RouteNames.login,
     debugLogDiagnostics: true,
     redirect: _redirect,
     routes: [
@@ -102,6 +103,13 @@ class AppRouter {
             pageBuilder: (context, state) => const NoTransitionPage(
               child: PresencesPage(),
             ),
+            routes: [
+              GoRoute(
+                path: RouteNames.presenceCreate,
+                name: RouteNames.presenceCreate,
+                builder: (context, state) => const PointagePage(),
+              ),
+            ],
           ),
 
           // Paiements

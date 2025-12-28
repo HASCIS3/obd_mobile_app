@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
 
 /// Page profil utilisateur
 class ProfilePage extends StatelessWidget {
@@ -12,12 +14,26 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Données de démonstration
-    final user = {
-      'name': 'Admin OBD',
-      'email': 'admin@obd.ml',
-      'role': 'admin',
-    };
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state.status == AuthStatus.unauthenticated) {
+          context.go(RouteNames.login);
+        }
+      },
+      child: _ProfileContent(),
+    );
+  }
+}
+
+class _ProfileContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final authState = context.watch<AuthBloc>().state;
+    final user = authState.user;
+    
+    final userName = user?.name ?? 'Utilisateur';
+    final userEmail = user?.email ?? '';
+    final userRole = user?.role?.name ?? 'user';
 
     return Scaffold(
       appBar: AppBar(
@@ -37,7 +53,7 @@ class ProfilePage extends StatelessWidget {
                         radius: 50,
                         backgroundColor: AppColors.primary.withOpacity(0.1),
                         child: Text(
-                          (user['name'] as String).substring(0, 2).toUpperCase(),
+                          userName.length >= 2 ? userName.substring(0, 2).toUpperCase() : 'U',
                           style: const TextStyle(
                             fontSize: 32,
                             color: AppColors.primary,
@@ -66,12 +82,12 @@ class ProfilePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    user['name'] as String,
+                    userName,
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    user['email'] as String,
+                    userEmail,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -85,7 +101,7 @@ class ProfilePage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
-                      (user['role'] as String).toUpperCase(),
+                      userRole.toUpperCase(),
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w500,
@@ -211,19 +227,19 @@ class ProfilePage extends StatelessWidget {
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Déconnexion'),
         content: const Text('Voulez-vous vraiment vous déconnecter ?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Annuler'),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implémenter la déconnexion avec Bloc
-              context.go(RouteNames.login);
+              Navigator.pop(dialogContext);
+              // Déconnexion via AuthBloc
+              context.read<AuthBloc>().add(const AuthLogoutRequested());
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Déconnexion'),

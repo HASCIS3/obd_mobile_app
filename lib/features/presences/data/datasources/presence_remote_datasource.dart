@@ -83,6 +83,14 @@ class PresenceRemoteDataSourceImpl implements PresenceRemoteDataSource {
 
   @override
   Future<void> pointageMasse(List<Map<String, dynamic>> presences) async {
-    await _client.post(ApiEndpoints.presences, data: {'presences': presences});
+    // Créer chaque présence individuellement
+    for (var presence in presences) {
+      try {
+        await _client.post(ApiEndpoints.presences, data: presence);
+      } catch (e) {
+        // Continuer même si une présence échoue (peut-être déjà existante)
+        continue;
+      }
+    }
   }
 }
