@@ -11,9 +11,7 @@ DisciplineModel _$DisciplineModelFromJson(Map<String, dynamic> json) =>
       id: (json['id'] as num).toInt(),
       nom: json['nom'] as String,
       description: json['description'] as String?,
-      tarifMensuel: json['tarif_mensuel'] is String 
-          ? double.parse(json['tarif_mensuel'] as String)
-          : (json['tarif_mensuel'] as num).toDouble(),
+      tarifMensuel: (json['tarif_mensuel'] as num).toDouble(),
       actif: json['actif'] as bool? ?? true,
       createdAt: json['created_at'] == null
           ? null

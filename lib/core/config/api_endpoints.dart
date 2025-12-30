@@ -59,4 +59,37 @@ class ApiEndpoints {
   // Suivi Scolaire
   static const String suivisScolaires = '/suivis-scolaires';
   static String suiviScolaire(int id) => '/suivis-scolaires/$id';
+  static String athleteSuiviScolaire(int athleteId) => '/athletes/$athleteId/suivi-scolaire';
+
+  // Rencontres/Matchs
+  static const String rencontres = '/rencontres';
+  static String rencontre(int id) => '/rencontres/$id';
+  static const String rencontresAVenir = '/rencontres/a-venir';
+  static const String rencontresResultats = '/rencontres/resultats';
+
+  // Combats Taekwondo
+  static String rencontreCombats(int rencontreId) => '/rencontres/$rencontreId/combats';
+  static String combat(int id) => '/combats/$id';
+  static String combatScores(int id) => '/combats/$id/scores';
+  static String combatTerminer(int id) => '/combats/$id/terminer';
+
+  // Activités (événements)
+  static const String activitiesAVenir = '/activities/a-venir';
+
+  // Calendrier
+  static const String calendrierEvents = '/calendrier/events';
+  static const String calendrierAVenir = '/calendrier/a-venir';
+
+  // Licences
+  static String athleteLicence(int athleteId) => '/athletes/$athleteId/licence';
+  static const String licencesExpirant = '/licences/expirant';
+
+  // Certificats médicaux
+  static String athleteCertificat(int athleteId) => '/athletes/$athleteId/certificat';
+  static const String certificatsExpirant = '/certificats/expirant';
+
+  // Stages
+  static const String stages = '/stages';
+  static String stage(int id) => '/stages/$id';
+  static String stageInscription(int id) => '/stages/$id/inscription';
 }

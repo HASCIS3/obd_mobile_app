@@ -1,6 +1,13 @@
+export 'activity_model.dart';
 export 'athlete_model.dart';
+export 'certificat_medical_model.dart';
+export 'coach_model.dart';
+export 'combat_taekwondo_model.dart';
 export 'discipline_model.dart';
+export 'licence_model.dart';
 export 'paiement_model.dart';
 export 'performance_model.dart';
 export 'presence_model.dart';
+export 'rencontre_model.dart';
+export 'suivi_scolaire_model.dart';
 export 'user_model.dart';
